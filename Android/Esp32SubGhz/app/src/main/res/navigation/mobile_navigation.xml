@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.home.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_nav_home_to_nav_scanbt"
+            app:destination="@id/nav_scanbt" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_gallery"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.gallery.GalleryFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_slideshow"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.slideshow.SlideshowFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+
+    <fragment
+        android:id="@+id/nav_scanbt"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.scanBt.ScanBtFragment"
+        android:label="@string/menu_scanbt"
+        tools:layout="@layout/fragment_scanbt" >
+        <action
+            android:id="@+id/action_nav_scanbt_to_nav_connected_device"
+            app:destination="@id/nav_connected_device" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_connected_device"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.connectedDevice.ConnectedDeviceFragment"
+        android:label="@string/menu_connected_device"
+        tools:layout="@layout/fragment_connected_device" />
+
+</navigation>
