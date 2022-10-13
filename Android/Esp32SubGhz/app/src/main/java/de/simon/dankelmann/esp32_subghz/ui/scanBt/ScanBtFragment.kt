@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -73,12 +74,16 @@ class ScanBtFragment : Fragment(), AdapterView.OnItemClickListener {
         requireContext().registerReceiver(mReceiver, intentFilter)
 
         // START SCANNING:
-        _bluetoothService = BluetoothService(requireContext())
+        _bluetoothService = BluetoothService(requireContext(), btHandler())
         _bluetoothService?.startDiscovery()
 
         //startListItemRemovalTimer()
 
         return root
+    }
+
+    private inner class btHandler:Handler(){
+
     }
 
     fun startListItemRemovalTimer(){
