@@ -13,7 +13,9 @@ void loop()
 {
     if (SerialBT.available()){ 
       Serial.write(SerialBT.read()); 
-      SerialBT.println("ECHO");
     }
-    delay(20);
+
+    if(Serial.available()){
+      SerialBT.write(Serial.read());
+    }
 }

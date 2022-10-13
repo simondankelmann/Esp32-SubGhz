@@ -17,6 +17,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
 import java.util.*
+import kotlin.text.Charsets.US_ASCII
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -110,7 +111,7 @@ class BluetoothService (context: Context, private val handler: Handler){
                                     0,
                                     encodedBytes.size
                                 )
-                                val data = String(encodedBytes, Charset.defaultCharset())
+                                val data = String(encodedBytes, US_ASCII)
                                 readBufferPosition = 0
                                 Log.d(_logTag, "RECEIVED: $data")
                                 handler.post {

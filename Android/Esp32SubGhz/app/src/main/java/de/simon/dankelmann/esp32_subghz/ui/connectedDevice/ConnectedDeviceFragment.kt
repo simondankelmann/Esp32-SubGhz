@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,14 +13,9 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.findNavController
-import com.airbnb.lottie.LottieAnimationView
-import de.simon.dankelmann.esp32_subghz.MainActivity
 import de.simon.dankelmann.esp32_subghz.PermissionCheck.PermissionCheck
-import de.simon.dankelmann.esp32_subghz.R
 import de.simon.dankelmann.esp32_subghz.Services.BluetoothService
 import de.simon.dankelmann.esp32_subghz.databinding.FragmentConnectedDeviceBinding
-import de.simon.dankelmann.esp32_subghz.ui.home.HomeViewModel
 
 class ConnectedDeviceFragment: Fragment() {
 
@@ -53,7 +49,15 @@ class ConnectedDeviceFragment: Fragment() {
                 _viewModel?.updateText(deviceFromBundle.name + " - " + deviceFromBundle.address)
                 _bluetoothDevice = deviceFromBundle
 
-                _bluetoothService?.createSocket(_bluetoothDevice!!)
+                class SimpleThread: Thread() {
+                    public override fun run() {
+                        _bluetoothService?.createSocket(_bluetoothDevice!!)
+                    }
+                }
+
+                var t = SimpleThread()
+                t.run()
+
             }
         }
 
