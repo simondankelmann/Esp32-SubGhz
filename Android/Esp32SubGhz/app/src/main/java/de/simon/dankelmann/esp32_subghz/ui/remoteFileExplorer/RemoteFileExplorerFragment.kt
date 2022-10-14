@@ -114,7 +114,32 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
         _binding = null
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onItemClick(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        TODO("Not yet implemented")
+        var selectedEntry = _viewModel?.getRemoteFileExplorerEntryModel(p2)
+
+        if(selectedEntry!!.isDirectory){
+            // LOAD SUBDIRECTORY
+            changeDirectory(_currentPath + "/" + selectedEntry.fileName)
+        } else {
+            // RUN FILE
+            runFlipperFile(_currentPath + "/" + selectedEntry.fileName)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun changeDirectory(path: String){
+        if(_remoteFileExplorer != null){
+            _remoteFileExplorer?.listDirectoryContent(path);
+            _currentPath = path
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun runFlipperFile(path: String){
+        if(_remoteFileExplorer != null){
+            _remoteFileExplorer?.runFlipperFile(path);
+            _currentPath = path
+        }
     }
 }

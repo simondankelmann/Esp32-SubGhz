@@ -1,3 +1,6 @@
+// CC1101 
+#include <ELECHOUSE_CC1101_SRC_DRV.h>
+
 // JSON SUPPORT
 #include <ArduinoJson.h>
 #include <ArduinoJson.hpp>
@@ -14,14 +17,47 @@
 // DEFINITIONS
 #define MICRO_SD_IO 25
 
+// RF CONSTANTS
+#define ONBOARD_LED  2
+#define CCGDO0 2 //GPIO2
+#define CCGDO2 4 //GPIO4
+#define RESET443 32000 //32ms
+
 BluetoothSerial SerialBT;
+
+// FUNCTION HEADERS
+void sendSamples(int samples[], int samplesLenght);
 
 void setup()
 {
     Serial.begin(1000000);
+
+    pinMode(ONBOARD_LED,OUTPUT);
+    
+    
+
     SerialBT.begin("Esp32-SubGhz"); //Bluetooth device name
     SerialBT.register_callback(btCallback);
     Serial.println("The device started, now you can pair it with bluetooth!");
+
+
+    ELECHOUSE_cc1101.Init();
+    ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
+    ELECHOUSE_cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.SetTx();               // set Transmit on
+    ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    ELECHOUSE_cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+    ELECHOUSE_cc1101.setPktFormat(3);       // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX. 
+                                            // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins. 
+                                            // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX. 
+                                            // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
+  
+  
+    if (ELECHOUSE_cc1101.getCC1101()){       // Check the CC1101 Spi connection.
+      Serial.println("Connection OK");
+    }else{
+      Serial.println("Connection Error");
+    }
 
     // MICRO SD CARD SETUP:
     if(!SD.begin(MICRO_SD_IO)){
@@ -43,7 +79,7 @@ void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
 }
 
 void parseJsonCommand(String json){
-  StaticJsonDocument<256> doc;
+  DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, json);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
@@ -71,6 +107,12 @@ void parseJsonCommand(String json){
       writeSerialBT(listDirJson(SD, path));
   }
 
+  if(command == "RunFlipperFile"){
+      const char* path = doc["Parameters"][0];
+      //String path = String(parameterPtr);
+      transmitFlipperFile(path);
+  }
+
 }
 
 #pragma region BluetoothSerial IO
@@ -90,7 +132,7 @@ String readBluetoothSerialString(){
 #pragma region MicroSdCode
 
   String listDirJson(fs::FS &fs, const char * dirname){
-    StaticJsonDocument<256> doc;
+    DynamicJsonDocument doc(1024);
 
     doc["Command"] = "ListDir";
 
@@ -127,3 +169,102 @@ void loop()
 {
 
 }
+
+void transmitFlipperFile(const char * filename){
+  File flipperFile = SD.open(filename);
+
+  if (!flipperFile) {
+    Serial.println("The file cannot be opened");
+  } else {
+    // PARSE CONTENT
+    Serial.println("The file is opened");
+
+    while (flipperFile.available()) {
+      //String buffer = flipperFile.readStringUntil('\n');
+      //parseFlipperFileLine(buffer);
+
+      String command = flipperFile.readStringUntil(':');
+      flipperFile.readStringUntil(' ');
+      String value = flipperFile.readStringUntil('\n');
+
+      parseFlipperFileLine(command, value);
+    }
+
+    flipperFile.close();
+  }
+
+}
+
+void parseFlipperFileLine(String command, String value){
+
+  Serial.println("Command:");
+  Serial.println(command);
+
+  Serial.println("Value:");
+  Serial.println(value);
+
+  if(command == "RAW_Data"){
+
+    int samplesLength = 0;
+
+    // GET SAMPLES LENGTH
+    for(auto x : value)
+    {
+      if(x == ' '){
+        samplesLength++;
+      }
+    }
+
+    int samples[samplesLength];
+    String singleValue = "";
+    int counter = 0;
+
+    for(auto x : value)
+    {
+      if(x == ' '){
+        //Serial.println("parsed single value:");
+        //Serial.println(singleValue);
+        samples[counter] = singleValue.toInt();
+        singleValue = "";
+        counter++;
+      } else {
+        singleValue += String(x);
+      }
+    }
+
+    //Serial.println("Samples Length: ");
+    //Serial.println(samplesLength);
+
+    sendSamples(samples, samplesLength);
+    
+  }
+}
+
+void sendSamples(int samples[], int samplesLenght) {
+      Serial.print("Transmitting ");
+      Serial.print(samplesLenght);
+      Serial.println(" Samples");
+
+      int totalDelay = 0;
+      byte n = 0;
+
+      for (int i=0; i < samplesLenght; i++) {
+      
+        digitalWrite(CCGDO0,n);
+        totalDelay = samples[i]+0;
+        if(totalDelay < 0){
+          totalDelay = totalDelay * -1;
+        }
+        
+        delayMicroseconds(totalDelay);
+
+        if (samples[i] < RESET443) {
+          n = !n;       
+        }
+        
+      }
+      digitalWrite(CCGDO0,0);
+
+      Serial.println("Transmission completed.");
+      //currentCommand = "---";
+  }

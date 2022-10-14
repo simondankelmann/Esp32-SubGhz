@@ -88,6 +88,7 @@ class BluetoothSerial (context: Context){
                                 Log.d(_logTag, "RECEIVED: $data")
                                 // PASS RECEIVED DATA TO CALLBACK
                                 receivedDataCallback(data)
+                                receivedBytes= mutableListOf()
                             } else {
                                 // CONTINUE READING TO BUFFER
                                 receivedBytes += b

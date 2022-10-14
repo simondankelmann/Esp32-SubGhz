@@ -28,4 +28,12 @@ class RemoteFileExplorer (context: Context) {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun runFlipperFile(path: String){
+        if(_isConnected){
+            var jsonString = "{\"Command\":\"RunFlipperFile\",\"Parameters\":[\"\\$path\"]}"
+            _bluetoothSerial?.sendString(jsonString);
+        }
+    }
+
 }

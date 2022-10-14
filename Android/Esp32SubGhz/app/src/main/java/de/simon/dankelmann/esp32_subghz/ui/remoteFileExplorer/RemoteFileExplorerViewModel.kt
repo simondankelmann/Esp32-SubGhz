@@ -21,7 +21,18 @@ class RemoteFileExplorerViewModel : ViewModel() {
 
     fun addRemoteFileExplorerEntry(fileName:String, path: String, isDirectory:Boolean){
         var model = RemoteFileExplorerEntryModel(fileName, path, isDirectory)
-
+        var alreadyAdded = false
+        _remoteFileExplorerEntries.value!!.map {
+            if(it.isDirectory == model.isDirectory && it.fileName == model.fileName && it.path == model.path){
+                alreadyAdded = true
+            }
+        }
+        if(alreadyAdded == false){
+            _remoteFileExplorerEntries.value!!.add(model)
+            _remoteFileExplorerEntries.postValue(_remoteFileExplorerEntries.value!!)
+        }
+        //_remoteFileExplorerEntries.value!!.add(model)
+        /*
         if(_remoteFileExplorerEntries.value == null) {
             Log.d(_logTag, "NEW LIST")
             _remoteFileExplorerEntries.value = mutableListOf(model)
@@ -42,13 +53,20 @@ class RemoteFileExplorerViewModel : ViewModel() {
             } else {
                 //_bluetoothDevices.value =  bluetoothDevices.value!!.plus(model).toMutableList()
                 Log.d(_logTag, "NEWLY ADDED")
-                _remoteFileExplorerEntries.postValue(remoteFileExplorerEntries.value!!.plus(model).toMutableList()) //=  bluetoothDevices.value!!.plus(model).toMutableList()
+                _remoteFileExplorerEntries.postValue(_remoteFileExplorerEntries.value!!.plus(model).toMutableList()) //=  bluetoothDevices.value!!.plus(model).toMutableList()
+                //_remoteFileExplorerEntries.value!!.add(model)
             }
-        }
+        }*/
     }
 
     fun clearRemoteFileExplorerEntries(){
-        _remoteFileExplorerEntries.postValue(mutableListOf())
+        Log.d(_logTag, "Clearing")
+        remoteFileExplorerEntries.value!!.clear()
+        /*
+        remoteFileExplorerEntries.value!!.map {
+            Log.d(_logTag, "CLEARING: " + it.fileName)
+            remoteFileExplorerEntries.value!!.remove(it)
+        }*/
     }
 
     fun getRemoteFileExplorerEntryModel(index: Int) : RemoteFileExplorerEntryModel?{
@@ -60,6 +78,6 @@ class RemoteFileExplorerViewModel : ViewModel() {
         return null
     }
 
-    val remoteFileExplorerEntries: LiveData<MutableList<RemoteFileExplorerEntryModel>> = _remoteFileExplorerEntries
-    val text: LiveData<String> = _text
+    var remoteFileExplorerEntries: LiveData<MutableList<RemoteFileExplorerEntryModel>> = _remoteFileExplorerEntries
+    var text: LiveData<String> = _text
 }
