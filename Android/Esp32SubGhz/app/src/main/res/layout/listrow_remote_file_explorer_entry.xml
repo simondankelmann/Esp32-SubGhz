@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:orientation="horizontal"
+    >
+
+    <ImageView
+        android:id="@+id/folderFileIcon"
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_folder_24"
+        android:layout_gravity="left"
+        android:layout_weight="1"
+        android:scaleType="centerInside"
+        android:tint="@color/fontcolor_component_dark_inactive"
+        >
+    </ImageView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:orientation="vertical"
+            android:gravity="left"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/fileFolderName"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:text="File or Folder Name"
+                android:textStyle="bold"
+                android:textColor="@color/fontcolor_component_dark_active"
+                />
+
+            <TextView
+                android:id="@+id/additionalInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:text="..."
+                android:textStyle="italic"
+                android:textColor="@color/fontcolor_component_dark_inactive"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

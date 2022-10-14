@@ -43,7 +43,7 @@ void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
 }
 
 void parseJsonCommand(String json){
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<256> doc;
   DeserializationError error = deserializeJson(doc, json);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
@@ -90,8 +90,10 @@ String readBluetoothSerialString(){
 #pragma region MicroSdCode
 
   String listDirJson(fs::FS &fs, const char * dirname){
-    StaticJsonDocument<512> doc;
-    
+    StaticJsonDocument<256> doc;
+
+    doc["Command"] = "ListDir";
+
     JsonArray directories = doc.createNestedArray("directories");
     JsonArray files = doc.createNestedArray("files");
 
@@ -100,10 +102,13 @@ String readBluetoothSerialString(){
     if(root && root.isDirectory()){
        File file = root.openNextFile();
         while(file){
+          const char * filename = file.name();
           if(file.isDirectory()){
-            directories.add(file.name());
+            if(filename[0] != '.'){
+              directories.add(filename);
+            }
           } else {
-            files.add(file.name());
+            files.add(filename);
           }
           file = root.openNextFile();
         }

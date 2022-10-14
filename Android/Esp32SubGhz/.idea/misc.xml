@@ -11,8 +11,10 @@
         <entry key="app/src/main/res/layout/fragment_connecteddevice.xml" value="0.20677083333333332" />
         <entry key="app/src/main/res/layout/fragment_gallery.xml" value="0.2078125" />
         <entry key="app/src/main/res/layout/fragment_home.xml" value="0.3703125" />
+        <entry key="app/src/main/res/layout/fragment_remote_file_explorer.xml" value="0.22291666666666668" />
         <entry key="app/src/main/res/layout/fragment_scanbt.xml" value="0.3703125" />
         <entry key="app/src/main/res/layout/listrow_bluetooth_device.xml" value="0.19114583333333332" />
+        <entry key="app/src/main/res/layout/listrow_remote_file_explorer_entry.xml" value="0.22291666666666668" />
         <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.19114583333333332" />
       </map>
     </option>

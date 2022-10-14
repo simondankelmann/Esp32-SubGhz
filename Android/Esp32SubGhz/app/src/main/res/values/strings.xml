@@ -13,5 +13,6 @@
 
     <string name="menu_scanbt">Scan BT</string>
     <string name="menu_connected_device">Connected Device</string>
+    <string name="menu_remote_file_explorer">Remote File Explorer</string>
 
 </resources>

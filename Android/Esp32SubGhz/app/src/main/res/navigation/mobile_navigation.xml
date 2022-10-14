@@ -41,6 +41,16 @@
         android:id="@+id/nav_connected_device"
         android:name="de.simon.dankelmann.esp32_subghz.ui.connectedDevice.ConnectedDeviceFragment"
         android:label="@string/menu_connected_device"
-        tools:layout="@layout/fragment_connected_device" />
+        tools:layout="@layout/fragment_connected_device" >
+        <action
+            android:id="@+id/action_nav_connected_device_to_nav_remote_file_explorer"
+            app:destination="@id/nav_remote_file_explorer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_remote_file_explorer"
+        android:name="de.simon.dankelmann.esp32_subghz.ui.remoteFileExplorer.RemoteFileExplorerFragment"
+        android:label="@string/menu_remote_file_explorer"
+        tools:layout="@layout/fragment_remote_file_explorer" />
 
 </navigation>

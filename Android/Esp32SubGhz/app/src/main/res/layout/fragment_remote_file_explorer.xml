@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.remoteFileExplorer.RemoteFileExplorerFragment"
+    android:background="@color/background_dark"
+    android:id="@+id/remoteFileExplorerLayout">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/remoteFileExplorerTextViewTitle"
+        android:text="Remote File Explorer"
+        android:textColor="@color/fontcolor_component_dark_active"
+        android:textAlignment="center"
+        android:textSize="22dp"
+        android:textStyle="bold"
+        android:padding="10dp"
+        app:layout_constraintTop_toTopOf="@id/remoteFileExplorerLayout"
+        ></TextView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textViewCurrentPath"
+        android:text="Path: /"
+        android:textColor="@color/fontcolor_component_dark_inactive"
+        android:textAlignment="center"
+        android:padding="10dp"
+        app:layout_constraintTop_toBottomOf="@id/remoteFileExplorerTextViewTitle"></TextView>
+
+    <ListView
+        android:id="@+id/fileExplorerListView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/textViewCurrentPath"
+        app:layout_constraintBottom_toBottomOf="@id/remoteFileExplorerLayout"
+    />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

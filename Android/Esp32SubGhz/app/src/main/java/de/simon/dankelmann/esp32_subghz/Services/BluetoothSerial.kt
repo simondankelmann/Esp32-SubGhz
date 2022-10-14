@@ -15,6 +15,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
+import kotlin.reflect.KFunction1
 
 @RequiresApi(Build.VERSION_CODES.M)
 class BluetoothSerial (context: Context){
@@ -38,7 +39,7 @@ class BluetoothSerial (context: Context){
         _bluetoothAdapter = _bluetoothManager.adapter
     }
 
-    fun connect(macAddress: String, receivedDataCallback: (input: String) -> Unit){
+    fun connect(macAddress: String, receivedDataCallback: KFunction1<String, Unit>){
         if(_bluetoothAdapter != null){
             _bluetoothDevice = _bluetoothAdapter?.getRemoteDevice(macAddress)
             if(_bluetoothDevice != null){

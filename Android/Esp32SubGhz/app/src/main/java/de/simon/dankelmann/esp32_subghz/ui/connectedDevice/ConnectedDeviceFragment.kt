@@ -17,7 +17,9 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
 import de.simon.dankelmann.esp32_subghz.PermissionCheck.PermissionCheck
+import de.simon.dankelmann.esp32_subghz.R
 import de.simon.dankelmann.esp32_subghz.Services.BluetoothSerial
 import de.simon.dankelmann.esp32_subghz.Services.BluetoothService
 import de.simon.dankelmann.esp32_subghz.databinding.FragmentConnectedDeviceBinding
@@ -27,8 +29,7 @@ class ConnectedDeviceFragment: Fragment() {
     private var _binding: FragmentConnectedDeviceBinding? = null
     private var _viewModel: ConnectedDeviceViewModel? = null
     private var _bluetoothDevice: BluetoothDevice? = null
-    private var _bluetoothService: BluetoothService? = null
-    private var _bluetoothSerial: BluetoothSerial? = null
+    //private var _bluetoothSerial: BluetoothSerial? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -46,41 +47,28 @@ class ConnectedDeviceFragment: Fragment() {
         _binding = FragmentConnectedDeviceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        _bluetoothService = BluetoothService(requireContext())
-
         // GET DATA FROM BUNDLE
         var deviceFromBundle = arguments?.getParcelable("Device") as BluetoothDevice?
         if(deviceFromBundle != null){
             if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
                 _viewModel?.updateText(deviceFromBundle.name + " - " + deviceFromBundle.address)
                 _bluetoothDevice = deviceFromBundle
-
+                /*
                 _bluetoothSerial = BluetoothSerial(requireContext())
                 _bluetoothSerial?.connect(_bluetoothDevice?.address.toString(), ::receivedMessageCallback)
-
+                */
             }
         }
 
-
         val btn: Button = binding.button
-        val edittext: EditText = binding.editText
         btn.setOnClickListener { view ->
-            //_bluetoothSerial?.sendString(edittext.text.toString())
-            var jsonString = "{\"Command\":\"ListDir\",\"Parameters\":[\"\\/\",\"TEST\"]}"
-            _bluetoothSerial?.sendString(jsonString)
+            // GO TO FILE EXPLORER FRAGMENT
+            val bundle = Bundle()
+            bundle.putString("DeviceAddress", _bluetoothDevice?.address)
+            bundle.putParcelable("Device", _bluetoothDevice!!)
+            requireActivity().findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.action_nav_connected_device_to_nav_remote_file_explorer, bundle)
         }
-
-        val textView: TextView = binding.textConnectedDevice
-        viewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
-        }
-
         return root
-    }
-
-    private fun receivedMessageCallback(message: String){
-        Log.d(_logTag, "Callback entered")
-        _viewModel?.updateText(message)
     }
 
     override fun onDestroyView() {
