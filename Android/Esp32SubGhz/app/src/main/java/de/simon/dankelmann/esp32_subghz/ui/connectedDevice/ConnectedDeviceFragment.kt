@@ -65,7 +65,9 @@ class ConnectedDeviceFragment: Fragment() {
         val btn: Button = binding.button
         val edittext: EditText = binding.editText
         btn.setOnClickListener { view ->
-            _bluetoothSerial?.sendString(edittext.text.toString())
+            //_bluetoothSerial?.sendString(edittext.text.toString())
+            var jsonString = "{\"Command\":\"ListDir\",\"Parameters\":[\"\\/\",\"TEST\"]}"
+            _bluetoothSerial?.sendString(jsonString)
         }
 
         val textView: TextView = binding.textConnectedDevice

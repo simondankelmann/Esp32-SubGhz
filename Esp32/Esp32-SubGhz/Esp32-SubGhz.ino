@@ -1,9 +1,20 @@
+// JSON SUPPORT
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
+
+// BLUETOOTH INCLUDES
 #include "Arduino.h"
 #include "BluetoothSerial.h"
 
-BluetoothSerial SerialBT;
+// MICRO SD INCLUDES
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
 
-//String Test = "Ü Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero";
+// DEFINITIONS
+#define MICRO_SD_IO 25
+
+BluetoothSerial SerialBT;
 
 void setup()
 {
@@ -11,6 +22,12 @@ void setup()
     SerialBT.begin("Esp32-SubGhz"); //Bluetooth device name
     SerialBT.register_callback(btCallback);
     Serial.println("The device started, now you can pair it with bluetooth!");
+
+    // MICRO SD CARD SETUP:
+    if(!SD.begin(MICRO_SD_IO)){
+      Serial.println("Card Mount Failed");
+      return;
+    }
 }
 
 void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
@@ -21,24 +38,85 @@ void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
         String stringRead = readBluetoothSerialString();
         Serial.print("String read: ");
         Serial.println(stringRead);
-        // SEND SOME ECHO
-        writeSerialBT("ECHO: " + stringRead);
+        parseJsonCommand(stringRead);
     }
 }
 
+void parseJsonCommand(String json){
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, json);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+  const char* commandPtr = doc["Command"];
+  String command = String(commandPtr);
+
+  /* DEBUGGING
+  Serial.println("Command detected: ");
+  Serial.println(command);
+  int parameterSize = doc["Parameters"].size();
+  Serial.println("Parameters detected: ");
+  for (int i = 0; i < parameterSize; i++) {
+    const char* parameterPtr = doc["Parameters"][i];
+    String parameterValue = String(parameterPtr);
+    Serial.println(parameterValue);
+  }*/
+
+  if(command == "ListDir"){
+      const char* path = doc["Parameters"][0];
+      //String path = String(parameterPtr);
+      writeSerialBT(listDirJson(SD, path));
+  }
+
+}
+
+#pragma region BluetoothSerial IO
 void writeSerialBT(String message){
   SerialBT.println(message);
 }
 
 String readBluetoothSerialString(){
   String returnValue = "";
-
   while(SerialBT.available()){ 
     returnValue += SerialBT.readString();
   }
-
   return returnValue;
 }
+#pragma endregion
+
+#pragma region MicroSdCode
+
+  String listDirJson(fs::FS &fs, const char * dirname){
+    StaticJsonDocument<512> doc;
+    
+    JsonArray directories = doc.createNestedArray("directories");
+    JsonArray files = doc.createNestedArray("files");
+
+    // GET FILES AND DIRECTORIES
+    File root = fs.open(dirname);
+    if(root && root.isDirectory()){
+       File file = root.openNextFile();
+        while(file){
+          if(file.isDirectory()){
+            directories.add(file.name());
+          } else {
+            files.add(file.name());
+          }
+          file = root.openNextFile();
+        }
+    }
+
+
+    String result;
+    serializeJson(doc, result);
+    //Serial.println("JSON RESULT: " + result);
+    return result;
+  }
+
+#pragma endregion
 
 void loop()
 {
