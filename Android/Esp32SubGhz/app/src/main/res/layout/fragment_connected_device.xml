@@ -22,4 +22,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:text="LABEL"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MESSAGE HERE"
+        android:id="@+id/editText"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/text_connected_device"
+        app:layout_constraintEnd_toEndOf="@id/text_connected_device"
+        app:layout_constraintStart_toStartOf="@id/text_connected_device"
+        app:layout_constraintTop_toTopOf="parent">
+    </EditText>
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SEND"></Button>
 </androidx.constraintlayout.widget.ConstraintLayout>
