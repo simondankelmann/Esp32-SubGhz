@@ -25,6 +25,9 @@
 
 BluetoothSerial SerialBT;
 
+DynamicJsonDocument inputJson(1024);
+DynamicJsonDocument outputJson(1024);
+
 // FUNCTION HEADERS
 void sendSamples(int samples[], int samplesLenght);
 
@@ -79,15 +82,16 @@ void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
 }
 
 void parseJsonCommand(String json){
-  DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, json);
+  
+  inputJson.clear();  
+  DeserializationError error = deserializeJson(inputJson, json);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
     return;
   }
 
-  const char* commandPtr = doc["Command"];
+  const char* commandPtr = inputJson["Command"];
   String command = String(commandPtr);
 
   /* DEBUGGING
@@ -102,13 +106,13 @@ void parseJsonCommand(String json){
   }*/
 
   if(command == "ListDir"){
-      const char* path = doc["Parameters"][0];
+      const char* path = inputJson["Parameters"][0];
       //String path = String(parameterPtr);
       writeSerialBT(listDirJson(SD, path));
   }
 
   if(command == "RunFlipperFile"){
-      const char* path = doc["Parameters"][0];
+      const char* path = inputJson["Parameters"][0];
       //String path = String(parameterPtr);
       transmitFlipperFile(path);
   }
@@ -132,25 +136,29 @@ String readBluetoothSerialString(){
 #pragma region MicroSdCode
 
   String listDirJson(fs::FS &fs, const char * dirname){
-    DynamicJsonDocument doc(1024);
+    //DynamicJsonDocument doc(1024);
+    outputJson.clear();
 
-    doc["Command"] = "ListDir";
+    outputJson["Command"] = "ListDir";
 
-    JsonArray directories = doc.createNestedArray("directories");
-    JsonArray files = doc.createNestedArray("files");
+    JsonArray directories = outputJson.createNestedArray("directories");
+    JsonArray files = outputJson.createNestedArray("files");
 
     // GET FILES AND DIRECTORIES
     File root = fs.open(dirname);
     if(root && root.isDirectory()){
        File file = root.openNextFile();
         while(file){
-          const char * filename = file.name();
           if(file.isDirectory()){
-            if(filename[0] != '.'){
-              directories.add(filename);
+            if(file.name()[0] != '.'){
+              Serial.println("Adding Folder: ");
+              Serial.println(file.name());
+              directories.add(String(file.name()));
             }
           } else {
-            files.add(filename);
+            Serial.println("Adding File: ");
+            Serial.println(file.name());
+            files.add(String(file.name()));
           }
           file = root.openNextFile();
         }
@@ -158,8 +166,9 @@ String readBluetoothSerialString(){
 
 
     String result;
-    serializeJson(doc, result);
-    //Serial.println("JSON RESULT: " + result);
+    outputJson.garbageCollect();
+    serializeJson(outputJson, result);
+    Serial.println("JSON RESULT: " + result);
     return result;
   }
 
