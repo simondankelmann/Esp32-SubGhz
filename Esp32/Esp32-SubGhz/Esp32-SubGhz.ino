@@ -15,7 +15,7 @@
 #include "SPI.h"
 
 // DEFINITIONS
-#define MICRO_SD_IO 25
+#define MICRO_SD_IO 5
 
 // RF CONSTANTS
 #define ONBOARD_LED  2
@@ -28,41 +28,54 @@ BluetoothSerial SerialBT;
 DynamicJsonDocument inputJson(1024);
 DynamicJsonDocument outputJson(1024);
 
+ELECHOUSE_CC1101 cc1101;
+
 // FUNCTION HEADERS
 void sendSamples(int samples[], int samplesLenght);
+
+
 
 void setup()
 {
     Serial.begin(1000000);
 
+    Serial.print("MOSI: ");
+    Serial.println(MOSI);
+    Serial.print("MISO: ");
+    Serial.println(MISO);
+    Serial.print("SCK: ");
+    Serial.println(SCK);
+    Serial.print("SS: ");
+    Serial.println(SS);  
+
     pinMode(ONBOARD_LED,OUTPUT);
-    
-    
 
     SerialBT.begin("Esp32-SubGhz"); //Bluetooth device name
     SerialBT.register_callback(btCallback);
     Serial.println("The device started, now you can pair it with bluetooth!");
-
-
-    ELECHOUSE_cc1101.Init();
-    ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
-    ELECHOUSE_cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-    ELECHOUSE_cc1101.SetTx();               // set Transmit on
-    ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-    ELECHOUSE_cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-    ELECHOUSE_cc1101.setPktFormat(3);       // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX. 
+    
+    cc1101.setSpiPin(14, 12, 13, 15); // (SCK, MISO, MOSI, CSN); 
+    
+    cc1101.Init();
+    cc1101.setGDO(CCGDO0, CCGDO2);
+    cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    cc1101.SetTx();               // set Transmit on
+    cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+    cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+    cc1101.setPktFormat(3);       // Format of RX and TX data. 0 = Normal mode, use FIFOs for RX and TX. 
                                             // 1 = Synchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins. 
                                             // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX. 
                                             // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
   
   
-    if (ELECHOUSE_cc1101.getCC1101()){       // Check the CC1101 Spi connection.
+    if (cc1101.getCC1101()){       // Check the CC1101 Spi connection.
       Serial.println("Connection OK");
     }else{
       Serial.println("Connection Error");
     }
 
     // MICRO SD CARD SETUP:
+    Serial.println("Setting up MicroSD");
     if(!SD.begin(MICRO_SD_IO)){
       Serial.println("Card Mount Failed");
       return;
@@ -182,6 +195,16 @@ void loop()
 void transmitFlipperFile(const char * filename){
   File flipperFile = SD.open(filename);
 
+  
+  //ELECHOUSE_cc1101.Init();
+  //ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
+  //ELECHOUSE_cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+  //ELECHOUSE_cc1101.SetTx();               // set Transmit on
+  //ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
+  //ELECHOUSE_cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
+  //ELECHOUSE_cc1101.setPktFormat(3); 
+
+
   if (!flipperFile) {
     Serial.println("The file cannot be opened");
   } else {
@@ -211,6 +234,14 @@ void parseFlipperFileLine(String command, String value){
 
   Serial.println("Value:");
   Serial.println(value);
+
+  if(command == "Frequency"){
+    float frequency = value.toFloat() / 1000000;    
+    Serial.println("Detected Frequency:");
+    Serial.println(frequency);
+    //ELECHOUSE_cc1101.setSres();    
+    cc1101.setMHZ(315); 
+  }
 
   if(command == "RAW_Data"){
 
