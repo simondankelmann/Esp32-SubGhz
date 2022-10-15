@@ -54,7 +54,8 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
                 _bluetoothDevice = deviceFromBundle
                 _remoteFileExplorer = RemoteFileExplorer(requireContext())
                 _remoteFileExplorer?.connect(_bluetoothDevice?.address.toString(), ::receivedMessageCallback)
-                _remoteFileExplorer?.listDirectoryContent(_currentPath)
+                //_remoteFileExplorer?.listDirectoryContent(_currentPath)
+                changeDirectory(_currentPath)
             }
         }
 
