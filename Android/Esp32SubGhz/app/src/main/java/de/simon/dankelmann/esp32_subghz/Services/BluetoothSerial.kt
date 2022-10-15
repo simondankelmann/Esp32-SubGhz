@@ -44,6 +44,7 @@ class BluetoothSerial (context: Context){
             _bluetoothDevice = _bluetoothAdapter?.getRemoteDevice(macAddress)
             if(_bluetoothDevice != null){
                 if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
+
                     _bluetoothSocket = _bluetoothDevice?.createInsecureRfcommSocketToServiceRecord(_bluetoothSerialUuid)
                     if(_bluetoothSocket != null){
                         _bluetoothSocket?.connect()
@@ -53,6 +54,17 @@ class BluetoothSerial (context: Context){
                         // BEGIN LISTENING
                         beginListeningOnInputStream(receivedDataCallback)
                     }
+
+                    /*
+                    _bluetoothSocket = _bluetoothDevice?.createInsecureL2capChannel(5)
+                    if(_bluetoothSocket != null){
+                        _bluetoothSocket?.connect()
+                        _bluetoothSocketOutputStream = _bluetoothSocket?.getOutputStream()
+                        _bluetoothSocketInputStream = _bluetoothSocket?.getInputStream()
+                        isConnected = true
+                        // BEGIN LISTENING
+                        beginListeningOnInputStream(receivedDataCallback)
+                    }*/
                 }
             }
         }

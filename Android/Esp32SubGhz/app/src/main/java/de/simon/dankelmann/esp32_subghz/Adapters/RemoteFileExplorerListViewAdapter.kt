@@ -46,7 +46,7 @@ class RemoteFileExplorerListViewAdapter(private val context: Context, private va
         var convertView = convertView
         convertView = LayoutInflater.from(context).inflate(R.layout.listrow_remote_file_explorer_entry, parent, false)
 
-        entryFileName = convertView!!.findViewById(R.id.fileFolderName)
+        entryFileName = convertView!!.findViewById(R.id.folderFileName)
         entryIcon = convertView.findViewById(R.id.folderFileIcon)
 
         entryFileName.text = entryList[position].fileName

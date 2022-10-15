@@ -19,6 +19,14 @@ class RemoteFileExplorerViewModel : ViewModel() {
         value = "This is remote file explorer Fragment"
     }
 
+    private val _currentPath = MutableLiveData<String>().apply {
+        value = "/"
+    }
+
+    fun updateCurrentPath(newPath:String){
+        _currentPath.postValue(newPath)
+    }
+
     fun addRemoteFileExplorerEntry(fileName:String, path: String, isDirectory:Boolean){
         var model = RemoteFileExplorerEntryModel(fileName, path, isDirectory)
         var alreadyAdded = false
@@ -80,4 +88,5 @@ class RemoteFileExplorerViewModel : ViewModel() {
 
     var remoteFileExplorerEntries: LiveData<MutableList<RemoteFileExplorerEntryModel>> = _remoteFileExplorerEntries
     var text: LiveData<String> = _text
+    var currentPath: LiveData<String> = _currentPath
 }

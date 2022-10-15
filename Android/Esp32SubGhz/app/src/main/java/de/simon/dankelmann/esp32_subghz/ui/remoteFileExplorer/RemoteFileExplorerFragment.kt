@@ -66,11 +66,11 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
             listview.adapter = _listItemAdapter
         }
 
-        /*
-        val textView: TextView = binding.textRemoteFileExplorer
-        viewModel.text.observe(viewLifecycleOwner) {
+
+        val textView: TextView = binding.textViewCurrentPath
+        viewModel.currentPath.observe(viewLifecycleOwner) {
             textView.text = it
-        }*/
+        }
 
         return root
     }
@@ -90,7 +90,18 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
     }
 
     private fun handleListDirResult(result: JSONObject){
-        _viewModel?.clearRemoteFileExplorerEntries()
+
+        // ADD BACK BUTTON
+        if(_currentPath != "/"){
+            var parentPath = _currentPath.substring(0, _currentPath.lastIndexOf('/')+1)
+
+            if(parentPath != "/" && parentPath.endsWith("/")){
+                parentPath = parentPath.substring(0, parentPath.length - 1)
+            }
+
+            _viewModel?.addRemoteFileExplorerEntry("Up...", parentPath, true)
+
+        }
 
         var directories = result.getJSONArray("directories")
         var files = result.getJSONArray("files")
@@ -98,13 +109,25 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
         for (i in 0 until directories.length()) {
             val directory = directories.get(i).toString()
             Log.d(_logTag, "DIR: $directory")
-            _viewModel?.addRemoteFileExplorerEntry(directory.toString(), _currentPath, true)
+
+            var fullPath = _currentPath + "/" + directory
+            if(_currentPath.endsWith("/")){
+                fullPath = _currentPath + directory
+            }
+
+            _viewModel?.addRemoteFileExplorerEntry(directory, fullPath, true)
         }
 
         for (i in 0 until files.length()) {
             val file = files.get(i).toString()
             Log.d(_logTag, "FILE: $file")
-            _viewModel?.addRemoteFileExplorerEntry(file.toString(), _currentPath, false)
+
+            var fullPath = _currentPath + "/" + file
+            if(_currentPath.endsWith("/")){
+                fullPath = _currentPath + file
+            }
+
+            _viewModel?.addRemoteFileExplorerEntry(file, fullPath, false)
         }
 
     }
@@ -120,18 +143,20 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
         if(selectedEntry!!.isDirectory){
             // LOAD SUBDIRECTORY
-            changeDirectory(_currentPath + "/" + selectedEntry.fileName)
+            changeDirectory(selectedEntry.path)
         } else {
             // RUN FILE
-            runFlipperFile(_currentPath + "/" + selectedEntry.fileName)
+            runFlipperFile( selectedEntry.path)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun changeDirectory(path: String){
         if(_remoteFileExplorer != null){
+            _viewModel?.clearRemoteFileExplorerEntries()
             _remoteFileExplorer?.listDirectoryContent(path);
             _currentPath = path
+            _viewModel!!.updateCurrentPath(path)
         }
     }
 
