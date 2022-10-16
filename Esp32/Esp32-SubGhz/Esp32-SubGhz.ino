@@ -47,7 +47,6 @@ void setup()
     Serial.println("CC1101 Connection OK");
     initSdCard();
     Serial.println("SD Card initialized");
-
 }
 
 void initBluetooth(){
@@ -294,6 +293,7 @@ void sendSamples(int samples[], int samplesLenght) {
       Serial.println(" Samples");
 
       int totalDelay = 0;
+      unsigned long time;
       byte n = 0;
 
       for (int i=0; i < samplesLenght; i++) {
@@ -304,7 +304,13 @@ void sendSamples(int samples[], int samplesLenght) {
           totalDelay = totalDelay * -1;
         }
         
-        delayMicroseconds(totalDelay);
+        Serial.print("DELAYING:");
+        Serial.println(totalDelay);
+
+
+        time = micros();
+        while(micros() < time+totalDelay);
+        //delayMicroseconds(totalDelay);
 
         if (samples[i] < RESET443) {
           n = !n;       
