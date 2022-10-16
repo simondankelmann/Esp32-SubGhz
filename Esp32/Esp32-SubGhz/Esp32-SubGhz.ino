@@ -35,6 +35,8 @@ DynamicJsonDocument outputJson(1024);
 // FUNCTION HEADERS
 void sendSamples(int samples[], int samplesLenght);
 
+String fileToTransmit = "";
+
 void setup()
 {
     Serial.begin(1000000);
@@ -52,7 +54,6 @@ void setup()
 void initBluetooth(){
   SerialBT.begin("Esp32-SubGhz"); //Bluetooth device name
   SerialBT.register_callback(btCallback);
-  
 }
 
 void initSdCard(){
@@ -118,7 +119,8 @@ void parseJsonCommand(String json){
 
   if(command == "RunFlipperFile"){
       const char* path = inputJson["Parameters"][0];
-      transmitFlipperFile(path, false);
+      //transmitFlipperFile(path, false);
+      fileToTransmit = String(path);
   }
 
 }
@@ -181,7 +183,10 @@ String readBluetoothSerialString(){
 
 void loop()
 {
-
+    if(fileToTransmit != ""){
+      transmitFlipperFile(fileToTransmit.c_str(), false);
+      fileToTransmit = "";
+    }
 }
 
 void handleFlipperCommandLine(String command, String value){
@@ -282,6 +287,7 @@ void transmitFlipperFile(const char * filename, bool transmit){
     if(transmit == false){
       // STARTING TRANSMIT
       Serial.println("Reloading File to transmit");
+      fileToTransmit = filename;
       transmitFlipperFile(filename, true);
     }
   }
@@ -307,10 +313,9 @@ void sendSamples(int samples[], int samplesLenght) {
         Serial.print("DELAYING:");
         Serial.println(totalDelay);
 
-
-        time = micros();
-        while(micros() < time+totalDelay);
-        //delayMicroseconds(totalDelay);
+        //time = micros();
+        //while(micros() < time+totalDelay);
+        delayMicroseconds(totalDelay);
 
         if (samples[i] < RESET443) {
           n = !n;       
