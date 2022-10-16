@@ -186,7 +186,17 @@ void loop()
     if(fileToTransmit != ""){
       transmitFlipperFile(fileToTransmit.c_str(), false);
       fileToTransmit = "";
+      transmitSuccessToBtSerial();
     }
+}
+
+void transmitSuccessToBtSerial(){
+    outputJson.clear();
+    outputJson["Command"] = "RunFlipperFile";
+    outputJson.garbageCollect();
+    String result;
+    serializeJson(outputJson, result);
+    writeSerialBT(result);
 }
 
 void handleFlipperCommandLine(String command, String value){
@@ -310,9 +320,6 @@ void sendSamples(int samples[], int samplesLenght) {
           totalDelay = totalDelay * -1;
         }
         
-        Serial.print("DELAYING:");
-        Serial.println(totalDelay);
-
         //time = micros();
         //while(micros() < time+totalDelay);
         delayMicroseconds(totalDelay);

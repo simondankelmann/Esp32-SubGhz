@@ -12,6 +12,7 @@ class RemoteFileExplorer (context: Context) {
     @RequiresApi(Build.VERSION_CODES.M)
     private var _bluetoothSerial:BluetoothSerial? = null
     private var _isConnected = false
+    private var _isBlocked = false
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun connect(macAddress:String, receivedDataCallback: KFunction1<String, Unit>){

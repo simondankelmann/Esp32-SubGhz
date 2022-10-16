@@ -15,6 +15,14 @@ class RemoteFileExplorerViewModel : ViewModel() {
         value = mutableListOf()
     }
 
+    private val _statusLabel = MutableLiveData<String>().apply {
+        value = "Idle"
+    }
+
+    private val _connectionLabel = MutableLiveData<String>().apply {
+        value = "Disconnected"
+    }
+
     private val _text = MutableLiveData<String>().apply {
         value = "This is remote file explorer Fragment"
     }
@@ -25,6 +33,14 @@ class RemoteFileExplorerViewModel : ViewModel() {
 
     fun updateCurrentPath(newPath:String){
         _currentPath.postValue(newPath)
+    }
+
+    fun updateStatusLabel(newText:String){
+        _statusLabel.postValue(newText)
+    }
+
+    fun updateConnectionLabel(newText:String){
+        _connectionLabel.postValue(newText)
     }
 
     fun addRemoteFileExplorerEntry(fileName:String, path: String, isDirectory:Boolean){
@@ -89,4 +105,6 @@ class RemoteFileExplorerViewModel : ViewModel() {
     var remoteFileExplorerEntries: LiveData<MutableList<RemoteFileExplorerEntryModel>> = _remoteFileExplorerEntries
     var text: LiveData<String> = _text
     var currentPath: LiveData<String> = _currentPath
+    var statusLabel: LiveData<String> = _statusLabel
+    var connectionLabel: LiveData<String> = _connectionLabel
 }

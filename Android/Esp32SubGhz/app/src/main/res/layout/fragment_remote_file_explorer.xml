@@ -36,7 +36,41 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/textViewCurrentPath"
-        app:layout_constraintBottom_toBottomOf="@id/remoteFileExplorerLayout"
+        app:layout_constraintBottom_toTopOf="@id/bottomLayout"
     />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/bottomLayout"
+        app:layout_constraintBottom_toBottomOf="@id/remoteFileExplorerLayout">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/textviewStatus"
+            android:text="-"
+            android:textColor="@color/fontcolor_component_dark_inactive"
+            android:textAlignment="center"
+            android:padding="10dp"
+            >
+        </TextView>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/textviewConnectionStatus"
+            android:text="-"
+            android:textColor="@color/fontcolor_component_dark_inactive"
+            android:textAlignment="center"
+            android:padding="10dp"
+            >
+        </TextView>
+    </LinearLayout>
+
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

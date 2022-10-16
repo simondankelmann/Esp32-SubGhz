@@ -30,6 +30,7 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
     private var _currentPath: String = "/"
     private var _remoteFileExplorer:RemoteFileExplorer? = null
     private var _listItemAdapter: RemoteFileExplorerListViewAdapter? = null
+    private var _isBlocked = false
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -67,10 +68,19 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
             listview.adapter = _listItemAdapter
         }
 
-
         val textView: TextView = binding.textViewCurrentPath
         viewModel.currentPath.observe(viewLifecycleOwner) {
             textView.text = it
+        }
+
+        val textViewStatus: TextView = binding.textviewStatus
+        viewModel.statusLabel.observe(viewLifecycleOwner) {
+            textViewStatus.text = it
+        }
+
+        val textViewConnection: TextView = binding.textviewConnectionStatus
+        viewModel.connectionLabel.observe(viewLifecycleOwner) {
+            textViewConnection.text = it
         }
 
         return root
@@ -85,13 +95,20 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
                     "ListDir" -> {
                         handleListDirResult(jsonObject)
                     }
+                    "RunFlipperFile" -> {
+                        handleRunFlipperFileResult(jsonObject)
+                    }
                 }
             }
         }
     }
 
-    private fun handleListDirResult(result: JSONObject){
+    private fun handleRunFlipperFileResult(result: JSONObject){
+        _isBlocked = false
+        _viewModel?.updateStatusLabel("Transmittion completed")
+    }
 
+    private fun handleListDirResult(result: JSONObject){
         // ADD BACK BUTTON
         if(_currentPath != "/"){
             var parentPath = _currentPath.substring(0, _currentPath.lastIndexOf('/')+1)
@@ -101,7 +118,6 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
             }
 
             _viewModel?.addRemoteFileExplorerEntry("Up...", parentPath, true)
-
         }
 
         var directories = result.getJSONArray("directories")
@@ -131,6 +147,8 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
             _viewModel?.addRemoteFileExplorerEntry(file, fullPath, false)
         }
 
+        _viewModel?.updateStatusLabel("Directory loaded")
+        _isBlocked = false
     }
 
     override fun onDestroyView() {
@@ -140,20 +158,27 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onItemClick(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        var selectedEntry = _viewModel?.getRemoteFileExplorerEntryModel(p2)
+        if(!_isBlocked){
+            _isBlocked = true
+            var selectedEntry = _viewModel?.getRemoteFileExplorerEntryModel(p2)
 
-        if(selectedEntry!!.isDirectory){
-            // LOAD SUBDIRECTORY
-            changeDirectory(selectedEntry.path)
+            if(selectedEntry!!.isDirectory){
+                // LOAD SUBDIRECTORY
+                changeDirectory(selectedEntry.path)
+            } else {
+                // RUN FILE
+                runFlipperFile(selectedEntry.path)
+            }
         } else {
-            // RUN FILE
-            runFlipperFile( selectedEntry.path)
+            Log.e(_logTag, "Please wait...")
         }
+
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun changeDirectory(path: String){
         if(_remoteFileExplorer != null){
+            _viewModel?.updateStatusLabel("Loading")
             _viewModel?.clearRemoteFileExplorerEntries()
             _remoteFileExplorer?.listDirectoryContent(path);
             _currentPath = path
@@ -163,6 +188,7 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun runFlipperFile(path: String){
+        _viewModel?.updateStatusLabel("Transmitting")
         if(_remoteFileExplorer != null){
             _remoteFileExplorer?.runFlipperFile(path);
             _currentPath = path

@@ -30,7 +30,7 @@ class BluetoothSerial (context: Context){
     private var _bluetoothSocketOutputStream: OutputStream? = null
     private var _bluetoothSerialUuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //Standard SerialPortService ID
     private var _inputReaderThread:Thread? = null
-
+    private var _callback: KFunction1<String, Unit>? = null
     // PUBLIC VAR
     var isConnected = false
 
@@ -40,11 +40,12 @@ class BluetoothSerial (context: Context){
     }
 
     fun connect(macAddress: String, receivedDataCallback: KFunction1<String, Unit>){
+        _callback = receivedDataCallback
         if(_bluetoothAdapter != null){
             _bluetoothDevice = _bluetoothAdapter?.getRemoteDevice(macAddress)
             if(_bluetoothDevice != null){
                 if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
-
+                    /*
                     _bluetoothSocket = _bluetoothDevice?.createInsecureRfcommSocketToServiceRecord(_bluetoothSerialUuid)
                     if(_bluetoothSocket != null){
                         _bluetoothSocket?.connect()
@@ -54,18 +55,23 @@ class BluetoothSerial (context: Context){
                         // BEGIN LISTENING
                         beginListeningOnInputStream(receivedDataCallback)
                     }
-
-                    /*
-                    _bluetoothSocket = _bluetoothDevice?.createInsecureL2capChannel(5)
-                    if(_bluetoothSocket != null){
-                        _bluetoothSocket?.connect()
-                        _bluetoothSocketOutputStream = _bluetoothSocket?.getOutputStream()
-                        _bluetoothSocketInputStream = _bluetoothSocket?.getInputStream()
-                        isConnected = true
-                        // BEGIN LISTENING
-                        beginListeningOnInputStream(receivedDataCallback)
-                    }*/
+                    */
+                    connectSocket()
                 }
+            }
+        }
+    }
+
+    fun connectSocket(){
+        if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
+            _bluetoothSocket = _bluetoothDevice?.createInsecureRfcommSocketToServiceRecord(_bluetoothSerialUuid)
+            if(_bluetoothSocket != null){
+                _bluetoothSocket?.connect()
+                _bluetoothSocketOutputStream = _bluetoothSocket?.getOutputStream()
+                _bluetoothSocketInputStream = _bluetoothSocket?.getInputStream()
+                isConnected = true
+                // BEGIN LISTENING
+                beginListeningOnInputStream(_callback!!)
             }
         }
     }
@@ -76,6 +82,11 @@ class BluetoothSerial (context: Context){
     }
 
     fun sendString(message:String) {
+        if(!_bluetoothSocket!!.isConnected){
+            if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+                _bluetoothSocket!!.connect()
+            }
+        }
         if(isConnected && _bluetoothSocketOutputStream != null){
             Thread(Runnable {
                 _bluetoothSocketOutputStream!!.write(message.toByteArray())
