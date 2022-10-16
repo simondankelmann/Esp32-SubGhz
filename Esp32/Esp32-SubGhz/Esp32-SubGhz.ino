@@ -12,13 +12,6 @@
 #include "Arduino.h"
 #include "BluetoothSerial.h"
 
-// MICRO SD INCLUDES
-/*
-#include "FS.h"
-#include "SD.h"
-#include "SPI.h"
-*/
-
 // DEFINITIONS
 #define MICRO_SD_IO 5
 
@@ -28,22 +21,19 @@
 #define CCGDO2 4 //GPIO4
 #define RESET443 32000 //32ms
 
+//CC1101 Variables
+float cc1101_mhz = 433.92;
+
 BluetoothSerial SerialBT;
 SdFat SD;
 
 File flipperFile;
-
-const size_t LINE_DIM = 4096;
-char line[LINE_DIM];
-
 
 DynamicJsonDocument inputJson(1024);
 DynamicJsonDocument outputJson(1024);
 
 // FUNCTION HEADERS
 void sendSamples(int samples[], int samplesLenght);
-
-
 
 void setup()
 {
@@ -57,6 +47,7 @@ void setup()
     Serial.println("CC1101 Connection OK");
     initSdCard();
     Serial.println("SD Card initialized");
+
 }
 
 void initBluetooth(){
@@ -80,7 +71,7 @@ void initCC1101(){
     ELECHOUSE_cc1101.setSpiPin(14, 12, 13, 15); // (SCK, MISO, MOSI, CSN); 
     ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
-    ELECHOUSE_cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
+    ELECHOUSE_cc1101.setMHZ(cc1101_mhz);        // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
     ELECHOUSE_cc1101.SetTx();               // set Transmit on
     ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
     ELECHOUSE_cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
@@ -121,28 +112,14 @@ void parseJsonCommand(String json){
   const char* commandPtr = inputJson["Command"];
   String command = String(commandPtr);
 
-  /* DEBUGGING
-  Serial.println("Command detected: ");
-  Serial.println(command);
-  int parameterSize = doc["Parameters"].size();
-  Serial.println("Parameters detected: ");
-  for (int i = 0; i < parameterSize; i++) {
-    const char* parameterPtr = doc["Parameters"][i];
-    String parameterValue = String(parameterPtr);
-    Serial.println(parameterValue);
-  }*/
-
   if(command == "ListDir"){
       const char* path = inputJson["Parameters"][0];
-      //String path = String(parameterPtr);
-      //writeSerialBT(listDirJson(SD, path));
       writeSerialBT(listDirJson(path, 0));
   }
 
   if(command == "RunFlipperFile"){
       const char* path = inputJson["Parameters"][0];
-      //String path = String(parameterPtr);
-      transmitFlipperFile(path);
+      transmitFlipperFile(path, false);
   }
 
 }
@@ -176,7 +153,6 @@ String readBluetoothSerialString(){
     File file;
     char fileName[256];
 
-    //if (!aDirectory.isDir()) return ;
     aDirectory.rewind();
 
     while (file.openNext(&aDirectory, O_READ)) {
@@ -187,21 +163,10 @@ String readBluetoothSerialString(){
         for (uint8_t i = 0; i < tabulation; i++) Serial.write('\t');
         Serial.print(fileName);
 
-        
         if (file.isDir()) {
-          /* RECURSION
-          Serial.println(F("/"));
-          displayDirectoryContent(file, tabulation + 1);
-          */          
-
-          Serial.println("Adding Folder: ");
-          Serial.println(fileName);
           directories.add(String(fileName));
         } else {
-          Serial.println("Adding File: ");
-          Serial.println(fileName);
           files.add(String(fileName));
-          //Serial.write('\t'); Serial.print(file.fileSize()); Serial.println(F(" bytes"));
         }
       }
       file.close();
@@ -210,50 +175,9 @@ String readBluetoothSerialString(){
     String result;
     outputJson.garbageCollect();
     serializeJson(outputJson, result);
-    Serial.println("JSON RESULT: " + result);
+    //Serial.println("JSON RESULT: " + result);
     return result;
   }
-
-  /*
-  String listDirJson(fs::FS &fs, const char * dirname){
-    //DynamicJsonDocument doc(1024);
-    outputJson.clear();
-
-    outputJson["Command"] = "ListDir";
-
-    JsonArray directories = outputJson.createNestedArray("directories");
-    JsonArray files = outputJson.createNestedArray("files");
-
-    // GET FILES AND DIRECTORIES
-    File root = fs.open(dirname);
-    if(root && root.isDirectory()){
-       File file = root.openNextFile();
-        while(file){
-          if(file.isDirectory()){
-            if(file.name()[0] != '.'){
-              Serial.println("Adding Folder: ");
-              Serial.println(file.name());
-              directories.add(String(file.name()));
-            }
-          } else {
-            Serial.println("Adding File: ");
-            Serial.println(file.name());
-            files.add(String(file.name()));
-          }
-          file = root.openNextFile();
-        }
-        //file.close();
-        //file.flush();        
-    }
-
-  
-    String result;
-    outputJson.garbageCollect();
-    serializeJson(outputJson, result);
-    Serial.println("JSON RESULT: " + result);
-    return result;
-  }*/
-
 #pragma endregion
 
 void loop()
@@ -261,18 +185,24 @@ void loop()
 
 }
 
-void transmitFlipperFile(const char * filename){
+void handleFlipperCommandLine(String command, String value){
+    if(command == "Frequency"){
+      float frequency = value.toFloat() / 1000000;   
+      Serial.print("Setting Frequency:");
+      Serial.println(frequency);
+      //ELECHOUSE_cc1101.setMHZ(frequency);
+      cc1101_mhz = frequency;
+    }
+}
+
+
+void transmitFlipperFile(const char * filename, bool transmit){
+  if(transmit){
+    initCC1101();
+  }
+  
   initSdCard();
   flipperFile = SD.open(filename);
-
-  //ELECHOUSE_cc1101.Init();
-  //ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
-  //ELECHOUSE_cc1101.setMHZ(433.92);           // Here you can set your basic frequency. The lib calculates the frequency automatically (default = 433.92).The cc1101 can: 300-348 MHZ, 387-464MHZ and 779-928MHZ. Read More info from datasheet.
-  //ELECHOUSE_cc1101.SetTx();               // set Transmit on
-  //ELECHOUSE_cc1101.setModulation(2);      // set modulation mode. 0 = 2-FSK, 1 = GFSK, 2 = ASK/OOK, 3 = 4-FSK, 4 = MSK.
-  //ELECHOUSE_cc1101.setDRate(512);         // Set the Data Rate in kBaud. Value from 0.02 to 1621.83. Default is 99.97 kBaud!
-  //ELECHOUSE_cc1101.setPktFormat(3); 
-
 
   if (!flipperFile) {
     Serial.println("The file cannot be opened");
@@ -280,128 +210,81 @@ void transmitFlipperFile(const char * filename){
     // PARSE CONTENT
     Serial.println("The file is opened");
 
-    size_t n;
-    int ln = 1;
-    String command;
-    String value;
-        
-    while ((n = flipperFile.fgets(line, sizeof(line))) > 0) {
+    // CHAR BY CHAR
+    String command = "";
+    String value = "";
 
-        command = "";
-        value = "";
+    int data;
+    char dataChar;
+    bool appendCommand = true;
+    bool breakLoop = false;
+    int samples[512];
+    int currentSample = 0;    
 
-        bool appendCommand = true;
+    while ((data = flipperFile.read()) >= 0 && breakLoop == false) {
+        dataChar = data;
 
-        String y;
-        for(auto x : line)
-        {
-          y = String(x);
-          if(y != ""){
-            if(y == ":"){
+        switch (dataChar) {
+          case ':':
               appendCommand = false;
-            } else if(x == '\n'){
-              // DO NOT ADD NEWLINE TO VALUE            
-            } else if(appendCommand == true){
-              command += y;
-            } else if (appendCommand == false){
-              value += y;
-            }
-          }
-          
+              break;
+          case '\n':
+              // REMOVE SPACES IN FRONT OF VALUE
+              while(value.startsWith(" ")){
+                value = value.substring(1);
+              }
+
+              Serial.println("DUMP:");
+              Serial.println(command + " | " + value);
+
+              if(transmit == false){
+                // SETUP CC1101 PARAMETERS
+                handleFlipperCommandLine(command, value);
+              } else {
+                // TRANSMIT ON PREVIOUSLY SETUP CC1101
+                if(command == "RAW_Data" && transmit){
+                  sendSamples(samples, 512);
+                }
+              }
+
+              // GET READY FOR THE NEXT ROW
+              appendCommand = true;
+              command = "";
+              value = "";
+              currentSample = 0;
+              memset(samples, 0, sizeof(samples));       
+              break;
+          default:
+              if(appendCommand){
+                command += String(dataChar);
+              } else {
+                value += String(dataChar);
+
+                if(command == "RAW_Data"){
+                  if(dataChar == ' '){
+                    // REPLACE SPACES IN CURRENT SAMPLE
+                    value.replace(" ","");
+                    if(value != ""){
+                      samples[currentSample] = value.toInt();
+                      currentSample++;
+                      value = "";
+                    }
+                    
+                  }
+                } 
+              }
+              break;
         }
-
-        while(value.startsWith(" ")){
-          value = value.substring(1);
-        }
-
-
-        Serial.println("DUMP:");
-        Serial.println(command + " | " + value);
-        
-        //parseFlipperFileLine(command, value);
     }
 
     Serial.println("DONE WITH THE FILE, CLOSING");
     flipperFile.close();
 
-    /*
-    bool breakLoop = false;
-    while (flipperFile.available() && !breakLoop) {
-      //String buffer = flipperFile.readStringUntil('\n');
-      //parseFlipperFileLine(buffer);
-
-      String command = flipperFile.readStringUntil(':');
-      if(command == ""){
-        Serial.println("Breaking the Loop");
-        breakLoop = true;
-      }
-      Serial.println("next cmd: " + command);
-      flipperFile.readStringUntil(' ');
-      
-      String value = flipperFile.readStringUntil('\n');
-      Serial.println("DUMP VAL:");
-      Serial.println(value);
-
-
-      parseFlipperFileLine(command, value);
-    }*/
-
-    
-  }
-
-}
-
-void parseFlipperFileLine(String command, String value){
-
-  /*
-  Serial.println("Command:");
-  Serial.println(command);
-  Serial.println("Value:");
-  Serial.println(value);
-  */
-  
-
-  if(command == "Frequency"){
-    float frequency = value.toFloat() / 1000000;   
-    ELECHOUSE_cc1101.setMHZ(frequency);  
-    //Serial.println("Detected Frequency:");
-    //Serial.println(frequency);
-    //ELECHOUSE_cc1101.setSres();    
-  }
-
-  if(command == "RAW_Data"){
-
-    int samplesLength = 0;
-
-    // GET SAMPLES LENGTH
-    for(auto x : value)
-    {
-      if(x == ' '){
-        samplesLength++;
-      }
+    if(transmit == false){
+      // STARTING TRANSMIT
+      Serial.println("Reloading File to transmit");
+      transmitFlipperFile(filename, true);
     }
-
-    int samples[samplesLength];
-    String singleValue = "";
-    int counter = 0;
-
-    for(auto x : value)
-    {
-      if(x == ' '){
-        //Serial.println("parsed single value:");
-        //Serial.println(singleValue);
-        samples[counter] = singleValue.toInt();
-        singleValue = "";
-        counter++;
-      } else {
-        singleValue += String(x);
-      }
-    }
-
-    //Serial.println("Samples Length: ");
-    //Serial.println(samplesLength);
-
-    sendSamples(samples, samplesLength);
   }
 }
 
@@ -431,5 +314,4 @@ void sendSamples(int samples[], int samplesLenght) {
       digitalWrite(CCGDO0,0);
 
       Serial.println("Transmission completed.");
-      //currentCommand = "---";
   }
