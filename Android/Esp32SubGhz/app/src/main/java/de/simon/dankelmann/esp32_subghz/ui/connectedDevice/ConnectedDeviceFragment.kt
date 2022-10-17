@@ -53,10 +53,12 @@ class ConnectedDeviceFragment: Fragment() {
             if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
                 _viewModel?.updateText(deviceFromBundle.name + " - " + deviceFromBundle.address)
                 _bluetoothDevice = deviceFromBundle
-                /*
-                _bluetoothSerial = BluetoothSerial(requireContext())
-                _bluetoothSerial?.connect(_bluetoothDevice?.address.toString(), ::receivedMessageCallback)
-                */
+
+                // AUTO FILE EXPLORER
+                val bundle = Bundle()
+                bundle.putString("DeviceAddress", _bluetoothDevice?.address)
+                bundle.putParcelable("Device", _bluetoothDevice!!)
+                requireActivity().findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.action_nav_connected_device_to_nav_remote_file_explorer, bundle)
             }
         }
 

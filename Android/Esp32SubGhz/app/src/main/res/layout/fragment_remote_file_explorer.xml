@@ -8,6 +8,18 @@
     android:background="@color/background_dark"
     android:id="@+id/remoteFileExplorerLayout">
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/blockingAnimation"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:lottie_rawRes="@raw/dots"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        android:padding="5dp"
+        android:visibility="gone"
+        android:background="@color/background_dark"
+        />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

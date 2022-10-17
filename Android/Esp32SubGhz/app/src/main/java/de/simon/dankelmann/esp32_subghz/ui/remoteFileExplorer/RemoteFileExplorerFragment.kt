@@ -2,6 +2,7 @@ package de.simon.dankelmann.esp32_subghz.ui.remoteFileExplorer
 
 import android.Manifest
 import android.bluetooth.BluetoothDevice
+import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import de.simon.dankelmann.esp32_subghz.Adapters.BluetoothDeviceListviewAdapter
 import de.simon.dankelmann.esp32_subghz.Adapters.RemoteFileExplorerListViewAdapter
 import de.simon.dankelmann.esp32_subghz.PermissionCheck.PermissionCheck
+import de.simon.dankelmann.esp32_subghz.R
 import de.simon.dankelmann.esp32_subghz.Services.BluetoothSerial
 import de.simon.dankelmann.esp32_subghz.Services.RemoteFileExplorer
 import de.simon.dankelmann.esp32_subghz.databinding.FragmentRemoteFileExplorerBinding
@@ -106,6 +108,7 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
     private fun handleRunFlipperFileResult(result: JSONObject){
         _isBlocked = false
         _viewModel?.updateStatusLabel("Transmittion completed")
+        unblockUi()
     }
 
     private fun handleListDirResult(result: JSONObject){
@@ -149,6 +152,7 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
         _viewModel?.updateStatusLabel("Directory loaded")
         _isBlocked = false
+        unblockUi()
     }
 
     override fun onDestroyView() {
@@ -177,6 +181,7 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun changeDirectory(path: String){
+        blockUi(R.raw.dots)
         if(_remoteFileExplorer != null){
             _viewModel?.updateStatusLabel("Loading")
             _viewModel?.clearRemoteFileExplorerEntries()
@@ -188,10 +193,27 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun runFlipperFile(path: String){
+        blockUi(R.raw.sinus)
         _viewModel?.updateStatusLabel("Transmitting")
         if(_remoteFileExplorer != null){
             _remoteFileExplorer?.runFlipperFile(path);
             _currentPath = path
+        }
+    }
+
+    fun blockUi(resourceId: Int = 0){
+        activity?.runOnUiThread {
+            if(resourceId > 0){
+                _binding?.blockingAnimation!!.setAnimation(resourceId)
+            }
+            _binding?.blockingAnimation!!.visibility = View.VISIBLE
+            _binding?.blockingAnimation!!.bringToFront()
+        }
+    }
+
+    fun unblockUi(){
+        activity?.runOnUiThread {
+            _binding?.blockingAnimation!!.visibility = View.GONE
         }
     }
 }
