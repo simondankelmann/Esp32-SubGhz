@@ -313,20 +313,26 @@ void sendSamples(int samples[], int samplesLenght) {
       byte n = 0;
 
       for (int i=0; i < samplesLenght; i++) {
-      
-        digitalWrite(CCGDO0,n);
+        // SEND
+        n = 1;
+        
         totalDelay = samples[i]+0;
         if(totalDelay < 0){
           totalDelay = totalDelay * -1;
+          // DONT SEND
+          n = 0;
         }
+
+        digitalWrite(CCGDO0,n);
         
         //time = micros();
         //while(micros() < time+totalDelay);
         delayMicroseconds(totalDelay);
 
+        /*
         if (samples[i] < RESET443) {
           n = !n;       
-        }
+        }*/
         
       }
       digitalWrite(CCGDO0,0);
