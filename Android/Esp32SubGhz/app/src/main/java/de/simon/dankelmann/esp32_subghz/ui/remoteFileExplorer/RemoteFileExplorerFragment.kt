@@ -55,9 +55,10 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
         if(deviceFromBundle != null){
             if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
                 _bluetoothDevice = deviceFromBundle
-                _remoteFileExplorer = RemoteFileExplorer(requireContext())
+                _remoteFileExplorer = RemoteFileExplorer(requireContext(), ::connectionStateChangedCallback)
                 _remoteFileExplorer?.connect(_bluetoothDevice?.address.toString(), ::receivedMessageCallback)
                 //_remoteFileExplorer?.listDirectoryContent(_currentPath)
+                _viewModel?.updateConnectionLabel("Connected")
                 changeDirectory(_currentPath)
             }
         }
@@ -86,6 +87,21 @@ class RemoteFileExplorerFragment: Fragment() , AdapterView.OnItemClickListener{
         }
 
         return root
+    }
+
+    private fun connectionStateChangedCallback(connectionState: Int){
+        Log.d(_logTag, "Connection Callback: " + connectionState)
+        when(connectionState){
+            0 -> {
+                _viewModel?.updateStatusLabel("Disconnected")
+            }
+            1 -> {
+                _viewModel?.updateStatusLabel("Connecting...")
+            }
+            2 -> {
+                _viewModel?.updateStatusLabel("Connected")
+            }
+        }
     }
 
     private fun receivedMessageCallback(message: String){

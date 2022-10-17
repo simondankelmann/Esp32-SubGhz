@@ -6,17 +6,18 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import kotlin.reflect.KFunction1
 
-class RemoteFileExplorer (context: Context) {
+class RemoteFileExplorer (context: Context, connectionChangedCallback:KFunction1<Int, Unit>?) {
     private var _context:Context = context
     private val _logTag = "RemoteFileExplorer"
     @RequiresApi(Build.VERSION_CODES.M)
     private var _bluetoothSerial:BluetoothSerial? = null
     private var _isConnected = false
     private var _isBlocked = false
+    private var _connectionChangedCallback = connectionChangedCallback
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun connect(macAddress:String, receivedDataCallback: KFunction1<String, Unit>){
-        _bluetoothSerial = BluetoothSerial(_context)
+        _bluetoothSerial = BluetoothSerial(_context, _connectionChangedCallback)
         _bluetoothSerial?.connect(macAddress, receivedDataCallback)
         _isConnected = true
     }

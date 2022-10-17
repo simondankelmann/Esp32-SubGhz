@@ -6,10 +6,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
-import android.net.MacAddress
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.google.android.things.bluetooth.BluetoothConnectionManager
 import de.simon.dankelmann.esp32_subghz.PermissionCheck.PermissionCheck
 import java.io.IOException
 import java.io.InputStream
@@ -18,7 +18,12 @@ import java.util.*
 import kotlin.reflect.KFunction1
 
 @RequiresApi(Build.VERSION_CODES.M)
-class BluetoothSerial (context: Context){
+class BluetoothSerial (context: Context, connectionChangedCallback:KFunction1<Int, Unit>?){
+    // PUBLIC
+    val connectionState_Disconnected = 0
+    val connectionState_Connecting = 1
+    val connectionState_Connected = 2
+
     //PRIVATE VAR
     private val _logTag = "BluetoothSerial"
     private var _context:Context = context
@@ -31,12 +36,14 @@ class BluetoothSerial (context: Context){
     private var _bluetoothSerialUuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //Standard SerialPortService ID
     private var _inputReaderThread:Thread? = null
     private var _callback: KFunction1<String, Unit>? = null
+    private var _connectionChangedCallback: KFunction1<Int, Unit>? = null
     // PUBLIC VAR
     var isConnected = false
 
     init{
         _bluetoothManager = _context.getSystemService(BluetoothManager::class.java)
         _bluetoothAdapter = _bluetoothManager.adapter
+        _connectionChangedCallback = connectionChangedCallback
     }
 
     fun connect(macAddress: String, receivedDataCallback: KFunction1<String, Unit>){
@@ -45,52 +52,90 @@ class BluetoothSerial (context: Context){
             _bluetoothDevice = _bluetoothAdapter?.getRemoteDevice(macAddress)
             if(_bluetoothDevice != null){
                 if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
-                    /*
-                    _bluetoothSocket = _bluetoothDevice?.createInsecureRfcommSocketToServiceRecord(_bluetoothSerialUuid)
-                    if(_bluetoothSocket != null){
-                        _bluetoothSocket?.connect()
-                        _bluetoothSocketOutputStream = _bluetoothSocket?.getOutputStream()
-                        _bluetoothSocketInputStream = _bluetoothSocket?.getInputStream()
-                        isConnected = true
-                        // BEGIN LISTENING
-                        beginListeningOnInputStream(receivedDataCallback)
-                    }
-                    */
                     connectSocket()
                 }
             }
         }
     }
 
+    private fun resetConnection() {
+        _connectionChangedCallback!!(connectionState_Disconnected)
+        if (_bluetoothSocketInputStream != null) {
+            try {
+                _bluetoothSocketInputStream!!.close()
+            } catch (e: Exception) {
+            }
+            _bluetoothSocketInputStream = null
+        }
+        if (_bluetoothSocketOutputStream != null) {
+            try {
+                _bluetoothSocketOutputStream!!.close()
+            } catch (e: Exception) {
+            }
+            _bluetoothSocketOutputStream = null
+        }
+        if (_bluetoothSocket != null) {
+            try {
+                _bluetoothSocket!!.close()
+            } catch (e: Exception) {
+            }
+            _bluetoothSocket = null
+        }
+    }
+
     fun connectSocket(){
+        resetConnection()
+        _connectionChangedCallback!!(connectionState_Connecting)
+
         if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)){
             _bluetoothSocket = _bluetoothDevice?.createInsecureRfcommSocketToServiceRecord(_bluetoothSerialUuid)
             if(_bluetoothSocket != null){
                 _bluetoothSocket?.connect()
                 _bluetoothSocketOutputStream = _bluetoothSocket?.getOutputStream()
                 _bluetoothSocketInputStream = _bluetoothSocket?.getInputStream()
-                isConnected = true
-                // BEGIN LISTENING
-                beginListeningOnInputStream(_callback!!)
+                if(_bluetoothSocket!!.isConnected){
+                    isConnected = true
+                    _connectionChangedCallback!!(connectionState_Connected)
+                    // BEGIN LISTENING
+                    beginListeningOnInputStream(_callback!!)
+                }
             }
         }
     }
 
     fun disconnect(){
         stopListeningOnInputStream()
+        _connectionChangedCallback!!(connectionState_Disconnected)
         isConnected = false
     }
 
     fun sendString(message:String) {
-        if(!_bluetoothSocket!!.isConnected){
-            if(PermissionCheck.checkPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                _bluetoothSocket!!.connect()
+        try {
+            if(!_bluetoothSocket!!.isConnected){
+                connectSocket()
             }
-        }
-        if(isConnected && _bluetoothSocketOutputStream != null){
-            Thread(Runnable {
-                _bluetoothSocketOutputStream!!.write(message.toByteArray())
-            }).start()
+            if(isConnected && _bluetoothSocketOutputStream != null){
+                Thread(Runnable {
+                    try {
+                        _bluetoothSocketOutputStream!!.write(message.toByteArray())
+                    } catch (ex: java.lang.Exception) {
+                        Log.e(_logTag, ex.message.toString())
+                        isConnected = false
+                        _connectionChangedCallback!!(connectionState_Disconnected)
+
+                        connectSocket()
+                        //sendString(message)
+                    }
+
+                }).start()
+            }
+        }catch (ex: java.lang.Exception) {
+            Log.e(_logTag, ex.message.toString())
+            isConnected = false
+            _connectionChangedCallback!!(connectionState_Disconnected)
+
+            connectSocket()
+            //sendString(message)
         }
     }
 
@@ -98,7 +143,7 @@ class BluetoothSerial (context: Context){
         _inputReaderThread = Thread(Runnable {
             val delimiter: Byte = 10 //This is the ASCII code for a newline character
             var receivedBytes: MutableList<Byte>  = mutableListOf()
-            while (!Thread.currentThread().isInterrupted && isConnected){
+            while (!Thread.currentThread().isInterrupted && isConnected && _bluetoothSocket!!.isConnected){
                 try{
                     val bytesAvailable: Int = _bluetoothSocketInputStream!!.available()
                     if (bytesAvailable > 0) {

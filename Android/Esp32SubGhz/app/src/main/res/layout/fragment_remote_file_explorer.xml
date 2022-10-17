@@ -17,7 +17,7 @@
         app:lottie_loop="true"
         android:padding="5dp"
         android:visibility="gone"
-        android:background="@color/background_dark"
+        android:background="#40000000"
         />
 
     <TextView
