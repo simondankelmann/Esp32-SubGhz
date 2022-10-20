@@ -1,47 +1,34 @@
 // SD FAT LIB
 #include <SdFat.h>
+SdFat SD;
+#define MICRO_SD_IO 5
+File flipperFile;
+String fileToTransmit = "";
 
 // CC1101 
 #include <ELECHOUSE_CC1101_SRC_DRV.h>
+float cc1101_mhz = 433.92;
+#define CCGDO0 2 //GPIO2
+#define CCGDO2 4 //GPIO4
 
 // JSON SUPPORT
 #include <ArduinoJson.h>
 #include <ArduinoJson.hpp>
+DynamicJsonDocument inputJson(1024);
+DynamicJsonDocument outputJson(1024);
 
 // BLUETOOTH INCLUDES
 #include "Arduino.h"
 #include "BluetoothSerial.h"
-
-// DEFINITIONS
-#define MICRO_SD_IO 5
-
-// RF CONSTANTS
-#define ONBOARD_LED  2
-#define CCGDO0 2 //GPIO2
-#define CCGDO2 4 //GPIO4
-#define RESET443 32000 //32ms
-
-//CC1101 Variables
-float cc1101_mhz = 433.92;
-
 BluetoothSerial SerialBT;
-SdFat SD;
-
-File flipperFile;
-
-DynamicJsonDocument inputJson(1024);
-DynamicJsonDocument outputJson(1024);
 
 // FUNCTION HEADERS
 void sendSamples(int samples[], int samplesLenght);
 
-String fileToTransmit = "";
-
 void setup()
 {
     Serial.begin(1000000);
-
-    pinMode(ONBOARD_LED,OUTPUT);
+    pinMode(CCGDO0,OUTPUT);
 
     initBluetooth();
     Serial.println("The device started, now you can pair it with bluetooth!");
@@ -57,17 +44,13 @@ void initBluetooth(){
 }
 
 void initSdCard(){
-  //Serial.println("Setting up MicroSD");
   if (!SD.begin(MICRO_SD_IO, SPI_HALF_SPEED)) {
       SD.initErrorHalt();
       Serial.println("Card Mount Failed");
-  } else {
-    //Serial.println("SD Card initialized");
   }
 }
 
 void initCC1101(){
-    //Serial.println("Setting up CC1101");
     ELECHOUSE_cc1101.setSpiPin(14, 12, 13, 15); // (SCK, MISO, MOSI, CSN); 
     ELECHOUSE_cc1101.Init();
     ELECHOUSE_cc1101.setGDO(CCGDO0, CCGDO2);
@@ -80,18 +63,15 @@ void initCC1101(){
                                             // 2 = Random TX mode; sends random data using PN9 generator. Used for test. Works as normal mode, setting 0 (00), in RX. 
                                             // 3 = Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins.
   
-    if (ELECHOUSE_cc1101.getCC1101()){       // Check the CC1101 Spi connection.
-      //Serial.println("CC1101 Connection OK");
-    }else{
+    if(!ELECHOUSE_cc1101.getCC1101()){       // Check the CC1101 Spi connection.
       Serial.println("CC1101 Connection Error");
     }
 }
 
 void btCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
   if(event == ESP_SPP_SRV_OPEN_EVT){
-    Serial.println("Client Connected!");
+    Serial.println("Bluetooth Client Connected!");
   }else if(event == ESP_SPP_DATA_IND_EVT){
-        //Serial.printf("ESP_SPP_DATA_IND_EVT len=%d, handle=%d data=%d,\n\n", param->data_ind.len, param->data_ind.handle, param->data_ind.data);
         String stringRead = readBluetoothSerialString();
         Serial.print("String read: ");
         Serial.println(stringRead);
@@ -119,13 +99,11 @@ void parseJsonCommand(String json){
 
   if(command == "RunFlipperFile"){
       const char* path = inputJson["Parameters"][0];
-      //transmitFlipperFile(path, false);
       fileToTransmit = String(path);
   }
 
 }
 
-#pragma region BluetoothSerial IO
 void writeSerialBT(String message){
   SerialBT.println(message);
 }
@@ -137,49 +115,44 @@ String readBluetoothSerialString(){
   }
   return returnValue;
 }
-#pragma endregion
 
-#pragma region MicroSdCode
+String listDirJson(const char * dirname, byte tabulation) {
+  initSdCard();
+  outputJson.clear();
+  outputJson["Command"] = "ListDir";
+  JsonArray directories = outputJson.createNestedArray("directories");
+  JsonArray files = outputJson.createNestedArray("files");
 
-  String listDirJson(const char * dirname, byte tabulation) {
-    initSdCard();
-    outputJson.clear();
-    outputJson["Command"] = "ListDir";
-    JsonArray directories = outputJson.createNestedArray("directories");
-    JsonArray files = outputJson.createNestedArray("files");
+  File aDirectory;
+  aDirectory.open(dirname);
 
-    File aDirectory;
-    aDirectory.open(dirname);
+  File file;
+  char fileName[256];
 
-    File file;
-    char fileName[256];
+  aDirectory.rewind();
 
-    aDirectory.rewind();
+  while (file.openNext(&aDirectory, O_READ)) {
+    if (!file.isHidden()) {
 
-    while (file.openNext(&aDirectory, O_READ)) {
-      if (!file.isHidden()) {
+      file.getName(fileName, sizeof(fileName));
 
-        file.getName(fileName, sizeof(fileName));
+      for (uint8_t i = 0; i < tabulation; i++) Serial.write('\t');
+      Serial.print(fileName);
 
-        for (uint8_t i = 0; i < tabulation; i++) Serial.write('\t');
-        Serial.print(fileName);
-
-        if (file.isDir()) {
-          directories.add(String(fileName));
-        } else {
-          files.add(String(fileName));
-        }
+      if (file.isDir()) {
+        directories.add(String(fileName));
+      } else {
+        files.add(String(fileName));
       }
-      file.close();
     }
-
-    String result;
-    outputJson.garbageCollect();
-    serializeJson(outputJson, result);
-    //Serial.println("JSON RESULT: " + result);
-    return result;
+    file.close();
   }
-#pragma endregion
+
+  String result;
+  outputJson.garbageCollect();
+  serializeJson(outputJson, result);
+  return result;
+}
 
 void loop()
 {
@@ -212,6 +185,7 @@ void handleFlipperCommandLine(String command, String value){
 
 void transmitFlipperFile(const char * filename, bool transmit){
   if(transmit){
+    // SETUP CC1101 AGAIN
     initCC1101();
   }
   
@@ -221,10 +195,7 @@ void transmitFlipperFile(const char * filename, bool transmit){
   if (!flipperFile) {
     Serial.println("The file cannot be opened");
   } else {
-    // PARSE CONTENT
-    Serial.println("The file is opened");
-
-    // CHAR BY CHAR
+    // PARSE CONTENT CHAR BY CHAR
     String command = "";
     String value = "";
 
@@ -291,12 +262,10 @@ void transmitFlipperFile(const char * filename, bool transmit){
         }
     }
 
-    Serial.println("DONE WITH THE FILE, CLOSING");
     flipperFile.close();
 
     if(transmit == false){
-      // STARTING TRANSMIT
-      Serial.println("Reloading File to transmit");
+      // START TRANSMITTING THE DATA
       fileToTransmit = filename;
       transmitFlipperFile(filename, true);
     }
@@ -313,13 +282,13 @@ void sendSamples(int samples[], int samplesLenght) {
       byte n = 0;
 
       for (int i=0; i < samplesLenght; i++) {
-        // SEND
+        // TRANSMIT
         n = 1;
         
         totalDelay = samples[i]+0;
         if(totalDelay < 0){
+          // DONT TRANSMIT
           totalDelay = totalDelay * -1;
-          // DONT SEND
           n = 0;
         }
 
@@ -328,13 +297,9 @@ void sendSamples(int samples[], int samplesLenght) {
         //time = micros();
         //while(micros() < time+totalDelay);
         delayMicroseconds(totalDelay);
-
-        /*
-        if (samples[i] < RESET443) {
-          n = !n;       
-        }*/
-        
       }
+
+      // STOP TRANSMITTING
       digitalWrite(CCGDO0,0);
 
       Serial.println("Transmission completed.");
