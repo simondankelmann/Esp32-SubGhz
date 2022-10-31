@@ -4,7 +4,7 @@ Following you see a Map of the Pins used in the Code.
 ## ESP32 - CC1101
 | CC1101 | ESP32 |
 | ------ | ------ |
-| VCC | VCC |
+| VCC | 3V3 |
 | GND | GND |
 | MISO | GPIO12 |
 | MOSI | GPIO13 |
@@ -16,7 +16,7 @@ Following you see a Map of the Pins used in the Code.
 ## ESP32 - MICRO-SD
 | MICRO-SD | ESP32 |
 | ------ | ------ |
-| VCC | VCC |
+| VCC | 3V3 |
 | GND | GND |
 | MISO | GPIO19 |
 | MOSI | GPIO23 |
@@ -26,7 +26,7 @@ Following you see a Map of the Pins used in the Code.
 ## ESP32 - TP4056
 | TP4056 | ESP32 |
 | ------ | ------ |
-| OUT+ | VCC (Including a Switch) |
+| OUT+ | 3V3 (Including a Switch) |
 | OUT- | GND |
 
 ## TP4056 - 18650 BATTERY-HOLDER
