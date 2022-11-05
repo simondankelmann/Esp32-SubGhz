@@ -1,0 +1,176 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Extract Samples from .sub File</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet"> 
+
+        <script>
+            function extractSamples(){
+                var extractedSamples = new Array();
+
+                var fileContent = document.getElementById("fileContent").value;
+
+                var lines = fileContent.split("\n");
+                for( var i = 0; i < lines.length; i++ ) {
+                    var currentLine = lines[i];
+                    if(currentLine.includes("RAW_Data: ")){
+                        var dataString = currentLine.replace("RAW_Data: ", "").trim();
+                        var samples = dataString.split(" ");
+                        for( var s = 0; s < samples.length; s++ ) {
+                            var sample = parseInt(samples[s]);
+                            extractedSamples.push(sample);
+                        }
+                    }
+                }
+
+                var prepend = "";
+                var arduinoCodeString = "";
+                arduinoCodeString += "#define LENGTH_SAMPLES_MY_SIGNAL " + extractedSamples.length + "\n";
+                arduinoCodeString += "int samples_my_signal[LENGTH_SAMPLES_MY_SIGNAL] = {";
+                for( var s = 0; s < extractedSamples.length; s++ ) {
+                    arduinoCodeString += prepend + extractedSamples[s];
+                    prepend = ",";
+                }
+                arduinoCodeString += "};";
+
+                
+                var resultString  = "<div class=\"inputWrapper\">";
+                    resultString +=     "<div class=\"inputWrapperTop\">";
+                    resultString +=         "<label for=\"fileContent\">"+extractedSamples.length +" Samples detected. Copy the following Code to your Arduino Sketch:</label>";
+                    resultString +=     "</div>";
+                    resultString +=     "<div class=\"clear\"></div>";
+                    resultString +=     "<Textarea id=\"result\">"+ arduinoCodeString +"</Textarea>";
+                    resultString +=     "<div class=\"clear\"></div>";
+                    resultString += "</div>";
+                    resultString += "";
+                    resultString += "";
+                    resultString += "";
+
+                var resultContainer = document.getElementById("result");
+                result.innerHTML = resultString;
+            }
+        </script>
+
+
+
+        <style>
+            *{margin: 0; padding: 0;}
+
+            :root{
+                --border-color: #30363d;
+                --border-radius: 5px;
+
+                --color-background: #0d1117;
+                --color-font: #bdc5cd;
+
+                --font-family: 'Ubuntu', sans-serif;
+            }
+
+            html, body {
+                width: 100%;
+                background: var(--color-background);
+                color: var(--color-font);
+                font-family: var(--font-family);
+            }
+
+            .clear {
+                float:none;
+                clear: both;
+            }
+
+            h1 {
+                text-align: center;
+                color: #fff;
+                margin: 50px 0;
+            }
+
+            #container {
+                width: 80vw;
+                margin: 0 10vw;
+                position: absolute;
+            }
+
+            .inputWrapper  {
+                width: 100%;
+                border-radius: var(--border-radius);
+                border: 1px solid var(--border-color);
+            }
+
+            .inputWrapper .inputWrapperTop {
+                position: relative;
+                width: calc(100% - 30px);
+                height: 45px;
+                float:left;
+                background: #161b22;
+                border-top-left-radius: var(--border-radius);
+                border-top-right-radius: var(--border-radius);
+                padding: 0 15px;
+            }
+
+            .inputWrapper .inputWrapperTop label {
+                line-height: 45px;
+            }
+
+            .inputWrapper textarea {
+                width: 100%;
+                float:left;
+                border: 1px solid #cecece;
+                height: 250px;
+                background: var(--color-background);
+                color: var(--color-font);
+                font-family: var(--font-family);
+                padding: 15px;
+                border:none;
+            }
+
+            button {
+                float: right; 
+                margin: 25px 0;
+                padding: 0 15px;
+                height: 35px;
+                line-height: 35px;
+                border: 1px solid var(--border-color);
+                color: var(--color-font);
+                background: #21262d;
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            button:hover {
+                background: #30363d;
+                border-color: #8b949e;
+                color: #fff;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="container">
+
+            <h1>Extract Samples from .sub File</h1>
+
+            <div class="inputWrapper">
+                <div class="inputWrapperTop">
+                    <label for="fileContent">Insert the Filecontent here</label>
+                </div>
+                <div class="clear"></div>
+                
+                <Textarea id="fileContent"></Textarea>
+                <div class="clear"></div>
+            </div>
+
+        <button onclick="extractSamples();">Extract</button>
+        <div class="clear"></div>
+
+
+        <div id="result">
+            <!-- RESULT WILL BE RENDERED HERE -->
+        </div>
+
+        </div>
+    </body>
+</html>
