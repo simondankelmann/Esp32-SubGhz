@@ -22,7 +22,8 @@ More supported Properties will be implemented in the Future, however those Prope
 ## Transmit Flipper Zero .sub Files
 In order to transmit a Signal that was recorded with a Flipper Zero Device you need to extract all Samples stored in the .sub File you want to transmit. I wrote a simple Web-based Tool to make this as easy as possible.
 
-You can find the Samples-Extractor-Tool here: LINK_TO_TOOL
+You can find the Samples-Extractor-Tool here: 
+[https://simondankelmann.github.io/Esp32-SubGhz/](https://simondankelmann.github.io/Esp32-SubGhz/)
 
 You simple need to insert the desired Filecontent int the Textbox and press the Extract Button. After that you will be provided with a piece of Code that you can insert into your Arduino Code. The provided Code should look similiar to this:
 
