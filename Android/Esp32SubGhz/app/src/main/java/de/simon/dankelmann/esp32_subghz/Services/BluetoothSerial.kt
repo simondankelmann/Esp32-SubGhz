@@ -109,6 +109,71 @@ class BluetoothSerial (context: Context, connectionChangedCallback:KFunction1<In
         isConnected = false
     }
 
+    fun sendByteString(message:String){
+        Log.d(_logTag, "ByteSize:" + message.toByteArray().size)
+        Log.d(_logTag, "StrLen:" + message.length)
+
+        var max = 100
+        var delay = 100
+
+        Thread(Runnable {
+            try {
+                var bytes = message.toByteArray()
+                var fRepeatitions:Float = bytes.size.toFloat() / max
+                var repeatitions = fRepeatitions.toInt()
+
+                Log.d(_logTag, "REPEATS:" + fRepeatitions)
+
+                var res = fRepeatitions.rem(1)
+                if (res.equals(0.0F)){
+                    Log.d(_logTag, "EVEN")
+                } else {
+                    Log.d(_logTag, "UNEVEN ")
+                    repeatitions++;
+                }
+
+                Log.d(_logTag, "repeatitions:  " + repeatitions)
+                var alreadySent = 0
+                for (i in 0..(repeatitions - 1)){
+                    var offset = max * i
+                    var length = max
+
+                    if(i == (repeatitions - 1)){
+                        length = bytes.size - alreadySent
+                    }
+
+                    _bluetoothSocketOutputStream!!.write(message.toByteArray(), offset, length)
+                    Thread.sleep(delay.toLong())  // wait for 1 second
+
+
+
+
+                    alreadySent += length
+
+                    Log.d(_logTag, "OFFSET: " + offset)
+                    Log.d(_logTag, "LENGTH: " + length)
+                    Log.d(_logTag, "SENT: " + alreadySent)
+
+
+                }
+
+
+
+                //_bluetoothSocketOutputStream!!.write(message.toByteArray(), 0, message.toByteArray().size)
+
+                _bluetoothSocketOutputStream!!.flush()
+            } catch (ex: java.lang.Exception) {
+                Log.e(_logTag, ex.message.toString())
+                isConnected = false
+                _connectionChangedCallback!!(connectionState_Disconnected)
+
+                connectSocket()
+                //sendString(message)
+            }
+
+        }).start()
+    }
+
     fun sendString(message:String) {
         try {
             if(!_bluetoothSocket!!.isConnected){
